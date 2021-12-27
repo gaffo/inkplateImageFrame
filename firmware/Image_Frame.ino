@@ -12,6 +12,7 @@ sync configuration and images and then display whatever it should.
 
 #include "Inkplate.h"
 #include "auth.h" // keep your personal secrets in the auth file so you don't check them into source
+#include "sd_image_repo.h"
 
 Inkplate display(INKPLATE_3BIT);
 
@@ -26,41 +27,57 @@ void setup()
     Serial.printf("Boot Number %d\n", bootCount);
     display.begin();
 
-    const uint8_t *aryBytes[] = {
-    };
+    SDRepo sdr;
+    if (sdr.init()) {
+        Serial.println("Error initting SDRepo, aborting");
+        error();
+        return;
+    }
 
-    const int aryW[] = {
-    };
+    // TODO: Sync from internet
 
-    const int aryH[] = {
-    };
+    // Fetch next image
+    if (!sdr.setIndex(bootCount)) {
+        Serial.println("Error setting current image, aborting");
+        error();
+        return;
+    }
 
-    const char *aryDesc[] = {
-    };
+    const filename* currentFile = sdr.currentFile();
+    if (currentFile == NULL) {
+        Serial.println("Got back null current image, aborting");
+        error();
+        return;
+    }
 
-    const int len = 3;
-    const uint64_t delay_seconds = 5;// 60 * 60;
-    const int fullRefresh = 9;
+    Serial.printf("Using image name: %s\n", currentFile);
+    if (!display.drawImage(*currentFile, 0, 0, 1)) {
+        Serial.println("Unable to draw requested image");
+        error();
+        return;
+    }
 
-    const int chosen = bootCount % len;
-    Serial.printf("Using Index: %d\n", chosen);
-    Serial.printf("Image: %s\n", aryDesc[chosen]);
-
-    const uint8_t* bytes = aryBytes[chosen];
-    const int w = aryW[chosen];
-    const int h = aryH[chosen];
-
-    bool result = display.drawImage(bytes, 0, 0, w, h);
-
-    Serial.println(result);
-    display.display();
-    Serial.printf("Going to sleep for %d seconds or %d minutes or %d hours\n", delay_seconds, delay_seconds/60, delay_seconds/(60*60));
-
-    esp_sleep_enable_timer_wakeup(delay_seconds * 1000 * 1000);
-    esp_deep_sleep_start();
+    sleep();
 }
 
 void loop()
 {
     // Never here, as deepsleep restarts esp32
+}
+
+void error() {
+    Serial.println("Displaying error image");
+
+    sleep();
+}
+
+void sleep() {
+    const int len = 3;
+    const uint64_t delay_seconds = 5;// 60 * 60;
+    const int fullRefresh = 9;
+    display.display();
+    Serial.printf("Going to sleep for %d seconds or %d minutes or %d hours\n", delay_seconds, delay_seconds/60, delay_seconds/(60*60));
+
+    esp_sleep_enable_timer_wakeup(delay_seconds * 1000 * 1000);
+    esp_deep_sleep_start();
 }
