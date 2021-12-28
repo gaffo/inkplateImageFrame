@@ -15,6 +15,9 @@ sync configuration and images and then display whatever it should.
 #include "Inkplate.h"
 #include "auth.h" // keep your personal secrets in the auth file so you don't check them into source
 #include "sd_image_repo.h"
+#include "error_image.h"
+
+#define uS_TO_S_FACTOR 1000000UL
 
 Inkplate display(INKPLATE_3BIT);
 
@@ -32,8 +35,14 @@ void setup()
     // Init the SD Card
     Serial.println("Initting SD Card");
 
+    if (false) {
+        error("TEST ERROR");
+        return;
+    }
+
     if (!display.sdCardInit()) {
         Serial.println("Unable to init sd card");
+        error("SD CARD INIT");
         return;
     }
 
@@ -42,7 +51,7 @@ void setup()
     SDRepo sdr;
     if (!sdr.init()) {
         Serial.println("Error initting SDRepo, aborting");
-        error(sdr);
+        error("SD REPO INIT");
         return;
     }
 
@@ -51,14 +60,14 @@ void setup()
     // Fetch next image
     if (!sdr.setIndex(bootCount)) {
         Serial.println("Error setting current image, aborting");
-        error(sdr);
+        error("SETTING CURRENT IMAGE");
         return;
     }
 
     const char* currentFile = sdr.currentFile();
     if (currentFile == NULL) {
         Serial.println("Got back null current image, aborting");
-        error(sdr);
+        error("NULL FILE");
         return;
     }
 
@@ -66,12 +75,12 @@ void setup()
     Serial.printf("Using image name: %s\n", currentFile);
     if (!display.drawImage(currentFile, 0, 0, 1)) {
         Serial.println("Unable to draw requested image");
-        error(sdr);
+        error(currentFile);
         return;
     }
 
-    // Ok time to sleep`        
-    sleep(sdr);
+    // Ok time to sleep`  
+    sleep(sdr.sleepSeconds());
 }
 
 void loop()
@@ -79,19 +88,26 @@ void loop()
     // Never here, as deepsleep restarts esp32
 }
 
-void error(SDRepo &sdr) {
+void error(const char* errorReason) {
     Serial.println("Displaying error image");
 
-    // TODO: Display error image
+    display.drawImage(error_image, 0, 0, error_image_w, error_image_h);
 
-    sleep(sdr);
+    display.setTextWrap(true);
+    display.setTextColor(0, 7);
+    display.setCursor(0, 0);
+    display.setTextSize(7);
+    display.printf("ERROR: %s", errorReason);
+
+    sleep(60);
 }
 
-void sleep(SDRepo &sdr) {
+void sleep(int sleepSeconds) {
+    // Flush Display
     display.display();
-    int sleepSeconds = sdr.sleepSeconds();
-    Serial.printf("Going to sleep for %d seconds.\n", sleepSeconds);
 
-    esp_sleep_enable_timer_wakeup(sleepSeconds * 1000 * 1000);
+    // Sleep
+    Serial.printf("Going to sleep for %d seconds.\n", sleepSeconds);
+    esp_sleep_enable_timer_wakeup(sleepSeconds * uS_TO_S_FACTOR);
     esp_deep_sleep_start();
 }
