@@ -1,3 +1,5 @@
+#include <ArduinoJson.h>
+
 /*
 Image frame from https://github.com/gaffo/inkplateImageFrame.
 
@@ -27,10 +29,20 @@ void setup()
     Serial.printf("Boot Number %d\n", bootCount);
     display.begin();
 
+    // Init the SD Card
+    Serial.println("Initting SD Card");
+
+    if (!display.sdCardInit()) {
+        Serial.println("Unable to init sd card");
+        return;
+    }
+
+    Serial.println("Starting SDRepo");
+
     SDRepo sdr;
-    if (sdr.init()) {
+    if (!sdr.init()) {
         Serial.println("Error initting SDRepo, aborting");
-        error();
+        error(sdr);
         return;
     }
 
@@ -39,25 +51,27 @@ void setup()
     // Fetch next image
     if (!sdr.setIndex(bootCount)) {
         Serial.println("Error setting current image, aborting");
-        error();
+        error(sdr);
         return;
     }
 
-    const filename* currentFile = sdr.currentFile();
+    const char* currentFile = sdr.currentFile();
     if (currentFile == NULL) {
         Serial.println("Got back null current image, aborting");
-        error();
+        error(sdr);
         return;
     }
 
+    // Try and display the image
     Serial.printf("Using image name: %s\n", currentFile);
-    if (!display.drawImage(*currentFile, 0, 0, 1)) {
+    if (!display.drawImage(currentFile, 0, 0, 1)) {
         Serial.println("Unable to draw requested image");
-        error();
+        error(sdr);
         return;
     }
 
-    sleep();
+    // Ok time to sleep`        
+    sleep(sdr);
 }
 
 void loop()
@@ -65,19 +79,19 @@ void loop()
     // Never here, as deepsleep restarts esp32
 }
 
-void error() {
+void error(SDRepo &sdr) {
     Serial.println("Displaying error image");
 
-    sleep();
+    // TODO: Display error image
+
+    sleep(sdr);
 }
 
-void sleep() {
-    const int len = 3;
-    const uint64_t delay_seconds = 5;// 60 * 60;
-    const int fullRefresh = 9;
+void sleep(SDRepo &sdr) {
     display.display();
-    Serial.printf("Going to sleep for %d seconds or %d minutes or %d hours\n", delay_seconds, delay_seconds/60, delay_seconds/(60*60));
+    int sleepSeconds = sdr.sleepSeconds();
+    Serial.printf("Going to sleep for %d seconds.\n", sleepSeconds);
 
-    esp_sleep_enable_timer_wakeup(delay_seconds * 1000 * 1000);
+    esp_sleep_enable_timer_wakeup(sleepSeconds * 1000 * 1000);
     esp_deep_sleep_start();
 }

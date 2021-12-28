@@ -92,6 +92,7 @@
                 "/home/gaffo/.arduino15/packages/Croduino_Boards/hardware/Inkplate/1.0.1/tools/sdk/include/fb_gfx",
                 "/home/gaffo/.arduino15/packages/Croduino_Boards/hardware/Inkplate/1.0.1/cores/Inkplate",
                 "/home/gaffo/.arduino15/packages/Croduino_Boards/hardware/Inkplate/1.0.1/variants/Inkplate",
+                "/home/gaffo/Arduino/libraries/ArduinoJson/src",
                 "/home/gaffo/Arduino/libraries/Inkplate-Arduino-library-master/src",
                 "/home/gaffo/.arduino15/packages/Croduino_Boards/hardware/Inkplate/1.0.1/libraries/SPI/src",
                 "/home/gaffo/.arduino15/packages/Croduino_Boards/hardware/Inkplate/1.0.1/libraries/HTTPClient/src",

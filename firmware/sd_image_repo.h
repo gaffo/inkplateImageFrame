@@ -1,9 +1,11 @@
 #pragma once
 
-typedef char filename[256];
+#include <ArduinoJson.h>
 
 class SDRepo {
 public:
+    SDRepo();
+
     // Call init before using, check error code otherwise
     bool init();
 
@@ -14,5 +16,18 @@ public:
     // returns a pointer to the current filename
     // we do not need to gc this, as it's just a pointer
     // to internal data
-    const filename* currentFile();
+    const char* currentFile() const;
+
+    // Returns the number of seconds to sleep
+    int sleepSeconds() const {
+        return m_sleepSeconds;
+    }
+
+private:
+    DynamicJsonDocument m_jdoc;
+    int m_index;
+    int m_count;
+
+    // Cached values
+    int m_sleepSeconds;
 };
